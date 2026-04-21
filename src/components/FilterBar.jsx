@@ -1,28 +1,42 @@
 import React from 'react';
 
-const FILTERS = [
-  { key: 'all', label: 'All', color: '#a1a1aa' },
+const CATEGORIES = [
   { key: '1', label: '1x', color: '#60a5fa' },
   { key: '2', label: '2x', color: '#f59e0b' },
   { key: '4', label: '4x', color: '#ef4444' },
 ];
 
-export default function FilterBar({ filter, onChange, counts }) {
+export default function FilterBar({ selected, onToggle, onClear, counts }) {
+  const allActive = selected.size === 0;
   return (
     <div style={styles.bar}>
-      {FILTERS.map((f) => {
-        const active = filter === f.key;
+      <button
+        onClick={onClear}
+        style={{
+          ...styles.chip,
+          ...(allActive
+            ? { background: 'rgba(161,161,170,0.18)', border: '1px solid #a1a1aa', color: '#e4e4e7' }
+            : {}),
+        }}
+        title="Show all categories"
+      >
+        <span>All</span>
+        <span style={styles.count}>{counts?.all ?? 0}</span>
+      </button>
+      {CATEGORIES.map((f) => {
+        const active = selected.has(f.key);
         const count = counts?.[f.key] ?? 0;
         return (
           <button
             key={f.key}
-            onClick={() => onChange(f.key)}
+            onClick={() => onToggle(f.key)}
             style={{
               ...styles.chip,
               ...(active
                 ? { background: f.color + '22', border: `1px solid ${f.color}`, color: f.color }
                 : {}),
             }}
+            title={active ? `Hide ${f.label} incidents` : `Show ${f.label} incidents`}
           >
             <span>{f.label}</span>
             <span style={styles.count}>{count}</span>
@@ -42,6 +56,7 @@ const styles = {
     borderRadius: 4, fontSize: 11,
     color: '#a1a1aa', letterSpacing: 0.4,
     fontVariantNumeric: 'tabular-nums',
+    userSelect: 'none',
   },
   count: {
     fontSize: 10, color: '#71717a',

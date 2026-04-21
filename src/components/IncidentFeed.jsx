@@ -1,7 +1,7 @@
 import React from 'react';
 import IncidentRow from './IncidentRow.jsx';
 
-export default function IncidentFeed({ incidents, onJump, onBookmark, bookmarkedIds }) {
+export default function IncidentFeed({ incidents, onJump, onBookmark, onSelectDriver, bookmarkedIds }) {
   if (incidents.length === 0) {
     return (
       <div style={styles.empty}>
@@ -21,6 +21,7 @@ export default function IncidentFeed({ incidents, onJump, onBookmark, bookmarked
           incident={incident}
           onJump={onJump}
           onBookmark={onBookmark}
+          onSelectDriver={onSelectDriver}
           bookmarked={bookmarkedIds.has(incident.id)}
         />
       ))}

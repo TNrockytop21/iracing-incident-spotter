@@ -21,7 +21,7 @@ function timeAgo(ts) {
   return `${Math.floor(m / 60)}h ${m % 60}m ago`;
 }
 
-export default function IncidentRow({ incident, onJump, onBookmark, bookmarked }) {
+export default function IncidentRow({ incident, onJump, onBookmark, onSelectDriver, bookmarked }) {
   const cat = CATEGORY_STYLE[incident.category] || CATEGORY_STYLE[1];
   const [, force] = React.useReducer((x) => x + 1, 0);
   React.useEffect(() => {
@@ -44,8 +44,22 @@ export default function IncidentRow({ incident, onJump, onBookmark, bookmarked }
       </div>
       <div style={styles.main}>
         <div style={styles.driverLine}>
-          {incident.carNumber && <span style={styles.carNum}>#{incident.carNumber}</span>}
-          <span style={styles.driverName}>{incident.userName}</span>
+          {incident.carNumber && (
+            <span
+              style={{ ...styles.carNum, ...styles.clickable }}
+              onClick={(e) => { e.stopPropagation(); onSelectDriver?.(incident.userName); }}
+              title="Show driver history"
+            >
+              #{incident.carNumber}
+            </span>
+          )}
+          <span
+            style={{ ...styles.driverName, ...styles.clickable }}
+            onClick={(e) => { e.stopPropagation(); onSelectDriver?.(incident.userName); }}
+            title="Show driver history"
+          >
+            {incident.userName}
+          </span>
           <span style={styles.totalCount}>· total {incident.newCount}x</span>
         </div>
         <div style={styles.meta}>
@@ -100,6 +114,7 @@ const styles = {
     padding: '1px 5px', borderRadius: 3, fontWeight: 600,
   },
   driverName: { fontWeight: 500 },
+  clickable: { cursor: 'pointer', textDecoration: 'none' },
   totalCount: { fontSize: 10, color: '#71717a' },
   meta: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 10, color: '#71717a' },
   dot: { color: '#3f3f46' },
