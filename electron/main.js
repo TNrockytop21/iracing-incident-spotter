@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const { autoUpdater } = require('electron-updater');
 
 let mainWindow = null;
 let iracing = null;
@@ -149,9 +150,54 @@ ipcMain.handle('replay:pause', async () => {
   }
 });
 
+function initAutoUpdater() {
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  const emit = (type, extra = {}) => send('updates:event', { type, ...extra });
+
+  autoUpdater.on('checking-for-update', () => emit('checking'));
+  autoUpdater.on('update-available', (info) => emit('available', { version: info?.version }));
+  autoUpdater.on('update-not-available', (info) => emit('not-available', { version: info?.version }));
+  autoUpdater.on('download-progress', (p) => emit('progress', { percent: Math.round(p.percent) }));
+  autoUpdater.on('update-downloaded', (info) => emit('downloaded', { version: info?.version }));
+  autoUpdater.on('error', (err) => emit('error', { message: err?.message || String(err) }));
+}
+
+ipcMain.handle('updates:check', async () => {
+  if (!app.isPackaged) return { ok: false, error: 'Updates only available in packaged builds' };
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    return { ok: true, version: result?.updateInfo?.version };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('updates:download', async () => {
+  if (!app.isPackaged) return { ok: false, error: 'Updates only available in packaged builds' };
+  try {
+    await autoUpdater.downloadUpdate();
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+
+ipcMain.handle('updates:install', async () => {
+  if (!app.isPackaged) return { ok: false, error: 'Updates only available in packaged builds' };
+  autoUpdater.quitAndInstall();
+  return { ok: true };
+});
+
+ipcMain.handle('updates:getCurrentVersion', async () => {
+  return { version: app.getVersion() };
+});
+
 app.whenReady().then(() => {
   createWindow();
   initIrsdk();
+  initAutoUpdater();
 });
 
 app.on('window-all-closed', () => {

@@ -20,4 +20,14 @@ contextBridge.exposeInMainWorld('spotter', {
     ipcRenderer.invoke('replay:jump', { sessionNum, sessionTime, leadInSeconds }),
   replayPlay: () => ipcRenderer.invoke('replay:play'),
   replayPause: () => ipcRenderer.invoke('replay:pause'),
+
+  onUpdateEvent: (handler) => {
+    const wrapped = (_evt, payload) => handler(payload);
+    ipcRenderer.on('updates:event', wrapped);
+    return () => ipcRenderer.removeListener('updates:event', wrapped);
+  },
+  checkForUpdates: () => ipcRenderer.invoke('updates:check'),
+  downloadUpdate: () => ipcRenderer.invoke('updates:download'),
+  installUpdate: () => ipcRenderer.invoke('updates:install'),
+  getAppVersion: () => ipcRenderer.invoke('updates:getCurrentVersion'),
 });

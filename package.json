@@ -1,6 +1,6 @@
 {
   "name": "iracing-incident-spotter",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Standalone desktop tool for broadcasters: live incident feed + replay jump, reads iRacing SDK directly.",
   "main": "electron/main.js",
   "type": "commonjs",

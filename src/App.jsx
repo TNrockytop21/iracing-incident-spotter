@@ -3,6 +3,7 @@ import FilterBar from './components/FilterBar.jsx';
 import IncidentFeed from './components/IncidentFeed.jsx';
 import BookmarkPanel from './components/BookmarkPanel.jsx';
 import DriverHistoryPanel from './components/DriverHistoryPanel.jsx';
+import UpdateButton from './components/UpdateButton.jsx';
 import { generateFakeBatch, generateFakeIncident, resetFakeState } from './lib/demoData.js';
 
 const BOOKMARKS_KEY = 'spotter.bookmarks.v1';
@@ -178,6 +179,7 @@ export default function App() {
             </div>
           )}
           <StatusPill connected={status.connected} error={status.error} />
+          <UpdateButton spotter={spotter} />
           <button
             style={{
               ...styles.bookmarkToggle,
