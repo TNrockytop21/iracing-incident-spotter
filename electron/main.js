@@ -62,7 +62,7 @@ function initIrsdk() {
   });
 
   iracing.on('Telemetry', (evt) => {
-    const v = evt.values || evt;
+    const v = evt?.data || {};
     if (typeof v.SessionTime === 'number') lastSessionTime = v.SessionTime;
     if (typeof v.SessionNum === 'number') lastSessionNum = v.SessionNum;
   });
@@ -119,16 +119,11 @@ function initIrsdk() {
 
 ipcMain.handle('replay:jump', async (_evt, { sessionNum, sessionTime, leadInSeconds = 3 }) => {
   if (!iracing) return { ok: false, error: 'iRacing SDK not available' };
-  const target = Math.max(0, Number(sessionTime) - Number(leadInSeconds));
+  const targetSeconds = Math.max(0, Number(sessionTime) - Number(leadInSeconds));
+  const targetMs = Math.round(targetSeconds * 1000);
   try {
-    if (iracing.playbackControls?.searchTs) {
-      iracing.playbackControls.searchTs(Number(sessionNum) || 0, target);
-    } else if (iracing.execCmd) {
-      iracing.execCmd('ReplaySearchSessionTime', target);
-    } else {
-      return { ok: false, error: 'No replay API on irsdk instance' };
-    }
-    return { ok: true, jumpedTo: target };
+    iracing.playbackControls.searchTs(Number(sessionNum) || 0, targetMs);
+    return { ok: true, jumpedTo: targetSeconds };
   } catch (err) {
     return { ok: false, error: err.message };
   }
