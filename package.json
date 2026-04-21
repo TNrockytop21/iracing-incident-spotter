@@ -34,9 +34,26 @@
     "files": [
       "electron/**/*",
       "dist/**/*",
-      "node_modules/**/*",
       "package.json"
     ],
-    "win": { "target": "nsis" }
+    "win": {
+      "target": "nsis",
+      "artifactName": "iRacing-Incident-Spotter-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "iRacing Incident Spotter"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "TNrockytop21",
+        "repo": "iracing-incident-spotter"
+      }
+    ]
   }
 }
