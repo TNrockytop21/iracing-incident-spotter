@@ -4,7 +4,6 @@ import IncidentFeed from './components/IncidentFeed.jsx';
 import BookmarkPanel from './components/BookmarkPanel.jsx';
 import DriverHistoryPanel from './components/DriverHistoryPanel.jsx';
 import UpdateButton from './components/UpdateButton.jsx';
-import { generateFakeBatch, generateFakeIncident, resetFakeState } from './lib/demoData.js';
 
 const BOOKMARKS_KEY = 'spotter.bookmarks.v1';
 const BOOKMARKS_VISIBLE_KEY = 'spotter.bookmarksVisible.v1';
@@ -125,17 +124,6 @@ export default function App() {
 
   const handleClearFeed = useCallback(() => {
     setIncidents([]);
-    resetFakeState();
-  }, []);
-
-  const handleDemoBatch = useCallback(() => {
-    const batch = generateFakeBatch(15);
-    setIncidents((prev) => [...batch, ...prev].slice(0, 500));
-  }, []);
-
-  const handleDemoOne = useCallback(() => {
-    const one = generateFakeIncident(0);
-    setIncidents((prev) => [one, ...prev].slice(0, 500));
   }, []);
 
   const filteredIncidents = useMemo(() => {
@@ -213,12 +201,6 @@ export default function App() {
                 <span style={styles.sortArrow}>{sortOrder === 'newest' ? '↓' : '↑'}</span>
                 <span>{sortOrder === 'newest' ? 'Newest' : 'Oldest'}</span>
               </button>
-              {!status.connected && (
-                <>
-                  <button style={styles.demoBtn} onClick={handleDemoBatch} title="Add 15 fake incidents">+15 demo</button>
-                  <button style={styles.demoBtn} onClick={handleDemoOne} title="Add 1 fake incident">+1 demo</button>
-                </>
-              )}
               <button style={styles.clearBtn} onClick={handleClearFeed}>Clear feed</button>
             </div>
           </div>
@@ -354,12 +336,4 @@ const styles = {
     fontVariantNumeric: 'tabular-nums',
   },
   sortArrow: { fontSize: 12, color: '#a1a1aa', lineHeight: 1 },
-  demoBtn: {
-    padding: '5px 10px', fontSize: 10,
-    background: 'rgba(168,85,247,0.10)',
-    color: '#c4b5fd',
-    border: '1px solid rgba(168,85,247,0.4)',
-    borderRadius: 4,
-    textTransform: 'uppercase', letterSpacing: 0.5,
-  },
 };
