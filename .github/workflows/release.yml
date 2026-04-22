@@ -26,6 +26,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Rebuild native modules for Electron (force)
+        run: npx --yes @electron/rebuild --force --module-dir .
+
       - name: Build Vite bundle
         run: npm run build
 
