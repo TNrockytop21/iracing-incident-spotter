@@ -177,14 +177,31 @@ function initIrsdk() {
   });
 }
 
-ipcMain.handle('replay:jump', async (_evt, { sessionNum, sessionTime, leadInSeconds = 3 }) => {
+ipcMain.handle('replay:jump', async (_evt, { sessionNum, sessionTime }) => {
   if (!iracing) return { ok: false, error: 'iRacing SDK not available' };
-  const targetSeconds = Math.max(0, Number(sessionTime) - Number(leadInSeconds));
-  const targetMs = Math.round(targetSeconds * 1000);
+  // Our detection lags the real contact by 1-3s because iRacing refreshes the
+  // session YAML roughly once per second. Instead of guessing a lead-in, we
+  // overshoot slightly past the detection moment and then ask iRacing itself
+  // to snap to the previous incident marker — iRacing knows the exact frame.
+  const overshootSeconds = Math.max(0, Number(sessionTime) + 1);
+  const targetMs = Math.round(overshootSeconds * 1000);
+  // Use the session number recorded at detection. Fall back to the current
+  // telemetry session number if the incident didn't capture one (e.g. detected
+  // before first telemetry frame).
+  const sn = Number.isFinite(sessionNum) ? Number(sessionNum) : lastSessionNum;
   try {
-    iracing.playbackControls.searchTs(Number(sessionNum) || 0, targetMs);
-    return { ok: true, jumpedTo: targetSeconds };
+    iracing.playbackControls.searchTs(sn, targetMs);
+    // Give iRacing a beat to seek, then snap to the actual incident frame.
+    setTimeout(() => {
+      try {
+        iracing.playbackControls.search('prevIncident');
+      } catch (e) {
+        logLine('prevIncident search failed:', e);
+      }
+    }, 300);
+    return { ok: true, jumpedTo: overshootSeconds, snappedToIncident: true };
   } catch (err) {
+    logLine('replay:jump failed:', err);
     return { ok: false, error: err.message };
   }
 });
