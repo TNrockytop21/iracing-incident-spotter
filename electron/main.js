@@ -122,7 +122,8 @@ function initIrsdk() {
   });
 
   iracing.on('Telemetry', (evt) => {
-    const v = evt?.data || {};
+    // node-irsdk-2023 emits Telemetry as { timestamp, values }
+    const v = evt?.values || {};
     if (typeof v.SessionTime === 'number') lastSessionTime = v.SessionTime;
     if (typeof v.SessionNum === 'number') lastSessionNum = v.SessionNum;
   });
