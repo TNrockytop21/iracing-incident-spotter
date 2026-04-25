@@ -1,6 +1,17 @@
 import React from 'react';
 
-export const CAMERA_PRESETS = ['Cockpit', 'Chopper', 'Blimp', 'Rear Chase', 'Far Chase'];
+export const CAMERA_PRESETS = [
+  'Cockpit',
+  'Chopper',
+  'Blimp',
+  'Rear Chase',
+  'Far Chase',
+  'TV1',
+  'TV2',
+  'TV3',
+  'Roll Bar',
+  'Nose',
+];
 
 export default function JumpSettings({
   leadInSeconds,
