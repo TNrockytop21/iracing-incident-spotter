@@ -4,9 +4,32 @@ import IncidentFeed from './components/IncidentFeed.jsx';
 import BookmarkPanel from './components/BookmarkPanel.jsx';
 import DriverHistoryPanel from './components/DriverHistoryPanel.jsx';
 import UpdateButton from './components/UpdateButton.jsx';
+import JumpSettings, { CAMERA_PRESETS } from './components/JumpSettings.jsx';
 
 const BOOKMARKS_KEY = 'spotter.bookmarks.v1';
 const BOOKMARKS_VISIBLE_KEY = 'spotter.bookmarksVisible.v1';
+const LEAD_IN_KEY = 'spotter.leadIn.v1';
+const CAMERA_KEY = 'spotter.camera.v1';
+
+function loadLeadIn() {
+  try {
+    const raw = localStorage.getItem(LEAD_IN_KEY);
+    if (raw === null) return 10;
+    const n = parseInt(raw, 10);
+    return Number.isFinite(n) ? Math.max(0, Math.min(30, n)) : 10;
+  } catch {
+    return 10;
+  }
+}
+
+function loadCamera() {
+  try {
+    const raw = localStorage.getItem(CAMERA_KEY);
+    return CAMERA_PRESETS.includes(raw) ? raw : 'Cockpit';
+  } catch {
+    return 'Cockpit';
+  }
+}
 
 function loadBookmarksVisible() {
   try {
@@ -40,6 +63,16 @@ export default function App() {
   const [sortOrder, setSortOrder] = useState('newest');
   const [selectedDriver, setSelectedDriver] = useState(null);
   const [bookmarksVisible, setBookmarksVisible] = useState(loadBookmarksVisible);
+  const [leadInSeconds, setLeadInSeconds] = useState(loadLeadIn);
+  const [cameraName, setCameraName] = useState(loadCamera);
+  const [cameraGroups, setCameraGroups] = useState([]);
+
+  useEffect(() => {
+    try { localStorage.setItem(LEAD_IN_KEY, String(leadInSeconds)); } catch {}
+  }, [leadInSeconds]);
+  useEffect(() => {
+    try { localStorage.setItem(CAMERA_KEY, cameraName); } catch {}
+  }, [cameraName]);
   const [status, setStatus] = useState({ connected: false, error: null });
   const [flash, setFlash] = useState(null);
 
@@ -78,10 +111,17 @@ export default function App() {
     const offReset = spotter.onSessionReset(() => {
       setIncidents([]);
     });
+    const offCams = spotter.onCameraList?.((payload) => {
+      if (Array.isArray(payload?.groups)) setCameraGroups(payload.groups);
+    });
+    spotter.getCameras?.().then((res) => {
+      if (Array.isArray(res?.groups)) setCameraGroups(res.groups);
+    });
     return () => {
       offInc?.();
       offStatus?.();
       offReset?.();
+      offCams?.();
     };
   }, [spotter]);
 
@@ -101,7 +141,8 @@ export default function App() {
         carIdx: incident.carIdx,
         sessionNum: incident.sessionNum,
         sessionTime: incident.sessionTime,
-        leadInSeconds: 10,
+        leadInSeconds,
+        cameraName,
       });
       if (res?.ok) {
         setFlash({ kind: 'ok', text: `Jumped replay to ${incident.userName} @ ${res.jumpedTo.toFixed(1)}s` });
@@ -110,7 +151,7 @@ export default function App() {
       }
       setTimeout(() => setFlash(null), 2000);
     },
-    [spotter],
+    [spotter, leadInSeconds, cameraName],
   );
 
   const handleBookmark = useCallback((incident) => {
@@ -199,6 +240,13 @@ export default function App() {
               counts={counts}
             />
             <div style={styles.panelHeaderActions}>
+              <JumpSettings
+                leadInSeconds={leadInSeconds}
+                onLeadInChange={setLeadInSeconds}
+                cameraName={cameraName}
+                onCameraChange={setCameraName}
+                availableGroups={cameraGroups}
+              />
               <button
                 style={styles.sortBtn}
                 onClick={() => setSortOrder((o) => (o === 'newest' ? 'oldest' : 'newest'))}

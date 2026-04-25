@@ -16,6 +16,12 @@ contextBridge.exposeInMainWorld('spotter', {
     ipcRenderer.on('session:reset', wrapped);
     return () => ipcRenderer.removeListener('session:reset', wrapped);
   },
+  onCameraList: (handler) => {
+    const wrapped = (_evt, payload) => handler(payload);
+    ipcRenderer.on('cameras:list', wrapped);
+    return () => ipcRenderer.removeListener('cameras:list', wrapped);
+  },
+  getCameras: () => ipcRenderer.invoke('cameras:get'),
   replayJump: (payload) => ipcRenderer.invoke('replay:jump', payload),
   replayPlay: () => ipcRenderer.invoke('replay:play'),
   replayPause: () => ipcRenderer.invoke('replay:pause'),

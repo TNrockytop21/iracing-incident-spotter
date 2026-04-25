@@ -58,6 +58,21 @@ let lastSessionTime = 0;
 let lastSessionNum = 0;
 let lastSessionUniqueID = null;
 let driverRoster = new Map();
+let cameraGroups = []; // [{ groupNum, groupName }]
+
+function findCameraGroupNum(cameraName) {
+  if (!cameraName || !cameraGroups.length) return null;
+  const target = String(cameraName).toLowerCase().trim();
+  // Try exact match first, then substring match (handles "Rear Chase" matching
+  // an iRacing group named "RearChase" or vice versa).
+  const norm = (s) => String(s || '').toLowerCase().replace(/\s+/g, '');
+  const targetNorm = norm(cameraName);
+  let match = cameraGroups.find((g) => norm(g.groupName) === targetNorm);
+  if (match) return match.groupNum;
+  match = cameraGroups.find((g) => g.groupName?.toLowerCase().includes(target));
+  if (match) return match.groupNum;
+  return null;
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -141,6 +156,15 @@ function initIrsdk() {
       send('session:reset', { sessionId: uid });
     }
 
+    // Refresh camera groups whenever SessionInfo changes (track changes, etc.)
+    const newGroups = data?.CameraInfo?.Groups;
+    if (Array.isArray(newGroups) && newGroups.length > 0) {
+      cameraGroups = newGroups
+        .filter((g) => g && g.GroupName != null && g.GroupNum != null)
+        .map((g) => ({ groupNum: Number(g.GroupNum), groupName: String(g.GroupName) }));
+      send('cameras:list', { groups: cameraGroups });
+    }
+
     for (const d of drivers) {
       if (d.CarIsPaceCar === 1 || d.IsSpectator === 1) continue;
       const carIdx = d.CarIdx;
@@ -180,14 +204,19 @@ function initIrsdk() {
 
 ipcMain.handle('replay:jump', async (_evt, payload) => {
   if (!iracing) return { ok: false, error: 'iRacing SDK not available' };
-  const { carNumber, sessionNum, sessionTime, leadInSeconds = 10 } = payload || {};
+  const { carNumber, sessionNum, sessionTime, leadInSeconds = 10, cameraName } = payload || {};
 
   // 1. Point the camera at the involved car FIRST. iRacing applies the camera
   //    switch immediately, so when the replay seeks, we're already focused.
   const carNum = String(carNumber || '').trim();
   if (carNum) {
     try {
-      iracing.camControls.switchToCar(carNum);
+      const groupNum = findCameraGroupNum(cameraName);
+      if (groupNum != null) {
+        iracing.camControls.switchToCar(carNum, groupNum);
+      } else {
+        iracing.camControls.switchToCar(carNum);
+      }
     } catch (e) {
       logLine('camera switch failed:', e);
     }
@@ -280,6 +309,10 @@ ipcMain.handle('updates:install', async () => {
 
 ipcMain.handle('updates:getCurrentVersion', async () => {
   return { version: app.getVersion() };
+});
+
+ipcMain.handle('cameras:get', async () => {
+  return { groups: cameraGroups };
 });
 
 ipcMain.handle('diag:openLog', async () => {
