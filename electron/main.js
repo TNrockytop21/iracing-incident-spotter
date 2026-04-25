@@ -178,29 +178,32 @@ function initIrsdk() {
   });
 }
 
-ipcMain.handle('replay:jump', async (_evt, { sessionNum, sessionTime }) => {
+ipcMain.handle('replay:jump', async (_evt, payload) => {
   if (!iracing) return { ok: false, error: 'iRacing SDK not available' };
-  // Our detection lags the real contact by 1-3s because iRacing refreshes the
-  // session YAML roughly once per second. Instead of guessing a lead-in, we
-  // overshoot slightly past the detection moment and then ask iRacing itself
-  // to snap to the previous incident marker — iRacing knows the exact frame.
-  const overshootSeconds = Math.max(0, Number(sessionTime) + 1);
-  const targetMs = Math.round(overshootSeconds * 1000);
-  // Use the session number recorded at detection. Fall back to the current
-  // telemetry session number if the incident didn't capture one (e.g. detected
-  // before first telemetry frame).
+  const { carNumber, sessionNum, sessionTime, leadInSeconds = 10 } = payload || {};
+
+  // 1. Point the camera at the involved car FIRST. iRacing applies the camera
+  //    switch immediately, so when the replay seeks, we're already focused.
+  const carNum = String(carNumber || '').trim();
+  if (carNum) {
+    try {
+      iracing.camControls.switchToCar(carNum);
+    } catch (e) {
+      logLine('camera switch failed:', e);
+    }
+  }
+
+  // 2. Seek back a lead-in window so the broadcaster sees the run-up to the
+  //    contact, not the moment of impact. Detection lags actual contact by
+  //    1-3s due to YAML refresh cadence, so the resulting position is roughly
+  //    (leadInSeconds - 2) seconds before the actual incident.
+  const targetSeconds = Math.max(0, Number(sessionTime) - Number(leadInSeconds));
+  const targetMs = Math.round(targetSeconds * 1000);
   const sn = Number.isFinite(sessionNum) ? Number(sessionNum) : lastSessionNum;
+
   try {
     iracing.playbackControls.searchTs(sn, targetMs);
-    // Give iRacing a beat to seek, then snap to the actual incident frame.
-    setTimeout(() => {
-      try {
-        iracing.playbackControls.search('prevIncident');
-      } catch (e) {
-        logLine('prevIncident search failed:', e);
-      }
-    }, 300);
-    return { ok: true, jumpedTo: overshootSeconds, snappedToIncident: true };
+    return { ok: true, jumpedTo: targetSeconds, focusedCar: carNum || null };
   } catch (err) {
     logLine('replay:jump failed:', err);
     return { ok: false, error: err.message };

@@ -16,8 +16,7 @@ contextBridge.exposeInMainWorld('spotter', {
     ipcRenderer.on('session:reset', wrapped);
     return () => ipcRenderer.removeListener('session:reset', wrapped);
   },
-  replayJump: (sessionNum, sessionTime, leadInSeconds) =>
-    ipcRenderer.invoke('replay:jump', { sessionNum, sessionTime, leadInSeconds }),
+  replayJump: (payload) => ipcRenderer.invoke('replay:jump', payload),
   replayPlay: () => ipcRenderer.invoke('replay:play'),
   replayPause: () => ipcRenderer.invoke('replay:pause'),
 

@@ -96,7 +96,13 @@ export default function App() {
         setTimeout(() => setFlash(null), 2000);
         return;
       }
-      const res = await spotter.replayJump(incident.sessionNum ?? 0, incident.sessionTime, 3);
+      const res = await spotter.replayJump({
+        carNumber: incident.carNumber,
+        carIdx: incident.carIdx,
+        sessionNum: incident.sessionNum,
+        sessionTime: incident.sessionTime,
+        leadInSeconds: 10,
+      });
       if (res?.ok) {
         setFlash({ kind: 'ok', text: `Jumped replay to ${incident.userName} @ ${res.jumpedTo.toFixed(1)}s` });
       } else {
